@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🍅 Pomo Trag - Simple Pomodoro Timer</title>
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Global Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+      letter-spacing: -.08rem;
+    }
+
+    /* Body styles: Flexbox to center content, gradient background */
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: linear-gradient(to bottom, #e0f7fa, #ffffff);
+      position: relative;
+    }
+
+    /* Progress Bar Styles */
+    #progressBar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 2vh; /* Thickness of progress bar */
+      background-color: #4CAF50; /* Default color */
+      width: 100%;
+      z-index: 999; /* Ensure progress bar is on top */
+      transition: width 1s ease-out; /* Smooth width transition */
+    }
+
+    /* Container Styles */
+    .container {
+      width: 90vw;
+      max-width: 100%;
+      background-color: #ffffff;
+      box-shadow: 0px 0px 2vw rgba(0, 0, 0, 0.1);
+      border-radius: 1vw;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 2vw;
+      transition: aspect-ratio 0.5s ease;
+      aspect-ratio: 17 / 8; /* Default aspect ratio for larger screens */
+    }
+
+    @media (max-width: 1200px) {
+      .container {
+        aspect-ratio: 4 / 3;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        aspect-ratio: 1 / .5;
+      }
+    }
+
+    /* Editable title styles */
+    .title {
+      font-size: 5vw;
+      color: #aaa; /* Initial color */
+      outline: none;
+      border: none;
+      text-align: center;
+      cursor: text;
+      display: block;
+      width: 100%;
+    }
+
+    .title:focus {
+      color: #333; /* Change color when focused */
+    }
+
+    /* Timer styles */
+    .timer {
+      font-size: 8vw;
+      font-weight: bold;
+      outline: none;
+      user-select: none;
+      text-align: center;
+    }
+
+    @media (max-width: 768px) {
+      .timer {
+        font-size: 12vw;
+      }
+    }
+
+    /* Control button container */
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 2vw;
+      margin-top: 2vw;
+    }
+
+    /* Base button styles */
+    .btn {
+      padding: 1vw 2vw;
+      font-size: 4vw;
+      border: none;
+      border-radius: 0.5vw;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 4px solid transparent;
+      position: relative;
+      transition: transform 0.3s ease;
+    }
+
+    /* Start button styles */
+    #startBtn {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    #startBtn.active {
+      border-color: #357a38; /* Highlight border when active */
+    }
+
+    /* Break button styles */
+    #breakBtn {
+      background-color: #FF9800;
+      color: white;
+    }
+
+    #breakBtn.active {
+      border-color: #b26a00; /* Highlight border when active */
+    }
+
+    /* Reset button styles */
+    #resetBtn {
+      background-color: #F44336;
+      color: white;
+    }
+
+    #resetBtn.active, #resetBtn:active {
+      border-color: #b71a0f; /* Highlight border when active */
+    }
+
+    /* Wiggle animation for break button */
+    @keyframes wiggle {
+      0%, 100% {
+        transform: rotate(0deg);
+      }
+      25% {
+        transform: rotate(3deg);
+      }
+      50% {
+        transform: rotate(-3deg);
+      }
+      75% {
+        transform: rotate(1deg);
+      }
+    }
+
+    #breakBtn.wiggle {
+      animation: wiggle 0.5s ease-in-out;
+    }
+
+    /* Sparkle effect for start button */
+    .sparkle {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      background: radial-gradient(circle, white 0%, transparent 70%);
+      border-radius: 50%;
+      animation: sparkle-animation 1s ease-out forwards;
+      pointer-events: none;
+    }
+
+    /* Animation for sparkles */
+    @keyframes sparkle-animation {
+      from {
+        transform: scale(0.3);
+        opacity: 1;
+      }
+      to {
+        transform: translate(var(--x), var(--y)) scale(1.2);
+        opacity: 0;
+      }
+    }
+
+    /* Colorful Break Time text */
+    .colorful-text span:nth-child(1) { color: #FF5733; }
+    .colorful-text span:nth-child(2) { color: #FF8D1A; }
+    .colorful-text span:nth-child(3) { color: #FFC300; }
+    .colorful-text span:nth-child(4) { color: #3498DB; }
+    .colorful-text span:nth-child(5) { color: #900C3F; }
+    /* Repeat pattern for additional letters */
+
+    /* trag.dev link styling */
+    .pill-link {
+      position: absolute;
+      bottom: 2vw;
+      right: 3.8vw;
+      background-color: #333;
+      color: white;
+      padding: 0.8vw 1.5vw;
+      font-size: 1.2vw;
+      border-radius: 50px;
+      text-decoration: none;
+      transition: background-color 0.3s ease;
+    }
+
+    .pill-link:hover {
+      background-color: #444;
+    }
+
+    @media (max-width: 768px) {
+      .pill-link {
+        font-size: 3vw;
+        padding: 1.5vw 2.5vw;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <!-- Progress Bar -->
+  <div id="progressBar"></div>
+
+  <!-- Timer Container -->
+  <div class="container">
+    <h1 class="title" contenteditable="true" id="title">What's your focus?</h1>
+    <div class="timer">
+      <span id="minutes">25</span>:<span id="seconds">00</span>
+    </div>
+    <div class="controls">
+      <button id="startBtn" class="btn" data-tooltip="Start Timer">▶️</button>
+      <button id="breakBtn" class="btn" data-tooltip="Take a Break">✋</button>
+      <button id="resetBtn" class="btn" data-tooltip="Reset Timer">🔄</button>
+    </div>
+    <a href="https://trag.dev" target="_blank" class="pill-link">trag.dev</a>
+  </div>
+
+  <script>
+    // Timer and state variables
+    let workTime = 25 * 60; // 25 minutes in seconds
+    let breakTime = 5 * 60; // 5 minutes in seconds
+    let currentTime = workTime;
+    let isWorking = true;
+    let isInBreakMode = false;
+    let timerStarted = false;
+    let timerInterval;
+    let isPaused = true;
+
+    // DOM elements
+    const minutesElement = document.getElementById("minutes");
+    const secondsElement = document.getElementById("seconds");
+    const startBtn = document.getElementById("startBtn");
+    const breakBtn = document.getElementById("breakBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const titleElement = document.getElementById("title");
+
+    const defaultHeader = "What's your focus?"; // Default text for title
+
+    // Update the timer display on the screen
+    function updateTimerDisplay() {
+      const minutes = Math.floor(currentTime / 60);
+      const seconds = Math.floor(currentTime % 60);
+      minutesElement.textContent = String(minutes).padStart(2, "0"); // Ensure 2-digit format
+      secondsElement.textContent = String(seconds).padStart(2, "0");
+    }
+
+    // Play a simple "bloop" sound when any button is clicked
+    function playBloopSound() {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      // Set oscillator type and frequency
+      oscillator.type = 'sine'; // Sine wave produces a smooth "bloop"
+      oscillator.frequency.setValueAtTime(440, audioCtx.currentTime); // Frequency in Hz (440 is the A note)
+
+      // Set gain (volume) and ramp down to create short "bloop"
+      gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime); // Initial volume
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5); // Ramp down volume over 0.5 seconds
+
+      // Start and stop the sound
+      oscillator.start(audioCtx.currentTime);
+      oscillator.stop(audioCtx.currentTime + 0.5); // Stop sound after 0.5 seconds
+    }
+
+    // Start the timer with a 1-second interval
+    function startTimer() {
+      clearInterval(timerInterval); // Clear any previous intervals
+      const endTime = Date.now() + currentTime * 1000; // Calculate end time in milliseconds
+
+      // Interval to decrease time every second
+      timerInterval = setInterval(() => {
+        if (!isPaused) {
+          const remainingTime = Math.round((endTime - Date.now()) / 1000); // Calculate remaining time
+
+          if (remainingTime <= 0) {
+            clearInterval(timerInterval); // Stop the timer at 0
+            currentTime = 0;
+            updateTimerDisplay(); // Update the display to show 00:00
+            isWorking ? setBreakTime() : resetToWorkSession(); // Switch modes after completion
+          } else {
+            currentTime = remainingTime; // Update current time
+            updateTimerDisplay();
+            updateProgressBar(); // Update the progress bar
+          }
+        }
+      }, 1000);
+    }
+
+    // Switch to break time
+    function setBreakTime() {
+      titleElement.innerHTML = makeColorfulText("Break time!"); // Colorful break text
+      currentTime = breakTime; 
+      isWorking = false;
+      isPaused = false;
+      isInBreakMode = true;
+      updateTimerDisplay();
+      updateProgressBar();
+      startTimer(); // Start the break timer
+      setActiveButton(breakBtn); // Highlight the break button
+      setProgressBarColor(breakBtn); // Set progress bar color to break button's color
+      triggerWiggle(breakBtn); // Wiggle animation on break button
+    }
+
+    // Convert text to colorful span elements for "Break time!"
+    function makeColorfulText(text) {
+      return `<div class="colorful-text">` + [...text].map(letter => `<span>${letter}</span>`).join("") + `</div>`;
+    }
+
+    // Reset back to work session after break
+    function resetToWorkSession() {
+      titleElement.innerText = defaultHeader; // Reset title
+      titleElement.style.color = "#aaa"; // Reset color
+      currentTime = workTime;
+      isWorking = true;
+      isPaused = true;
+      timerStarted = false;
+      isInBreakMode = false;
+      updateTimerDisplay();
+      resetProgressBar(); // Reset progress bar
+      removeActiveButton(); // Remove button highlight
+    }
+
+    // Reset the timer and start a new work session
+    function resetAndStartTimer() {
+      currentTime = workTime;
+      isWorking = true;
+      isPaused = false;
+      updateTimerDisplay();
+      resetProgressBar(); // Reset progress bar to full width
+      startTimer();
+      setActiveButton(startBtn); // Highlight the start button
+      setProgressBarColor(startBtn); // Set progress bar color to match start button
+      timerStarted = true;
+    }
+
+    // Handle title field events for user interaction
+    titleElement.addEventListener("focus", () => {
+      if (titleElement.innerText === defaultHeader) {
+        titleElement.innerText = ""; // Clear default text
+      }
+      titleElement.style.color = "#333"; // Change color to darker shade
+    });
+
+    titleElement.addEventListener("blur", () => {
+      if (titleElement.innerText.trim() === "") {
+        titleElement.innerText = defaultHeader; // Reset to default text if empty
+        titleElement.style.color = "#aaa";
+      }
+    });
+
+    // Handle enter key to start/reset the timer
+    titleElement.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        titleElement.blur(); // Remove focus from title on Enter
+        if (!timerStarted && titleElement.innerText.trim() !== "") {
+          playBloopSound(); // Play "bloop" sound when the timer starts
+          triggerSparkles(startBtn); // Add sparkles animation
+          resetAndStartTimer();
+        } else if (timerStarted && titleElement.innerText.trim() !== "") {
+          resetToWorkSession(); // Reset session if title is updated
+        }
+      }
+    });
+
+    // Start button functionality
+    startBtn.addEventListener("click", () => {
+      playBloopSound(); // Play "bloop" sound on click
+      if (!timerStarted && titleElement.innerText.trim() !== "") {
+        resetAndStartTimer();
+      } else if (isInBreakMode) {
+        resetToWorkSession();
+      }
+    });
+
+    // Break button functionality
+    breakBtn.addEventListener("click", () => {
+      playBloopSound(); // Play "bloop" sound on click
+      setBreakTime();
+    });
+
+    // Reset button functionality
+    resetBtn.addEventListener("click", () => {
+      playBloopSound(); // Play "bloop" sound on click
+      clearInterval(timerInterval); // Clear timer
+      currentTime = workTime; // Reset time to work time
+      isWorking = true;
+      isPaused = true;
+      timerStarted = false;
+      titleElement.innerText = defaultHeader;
+      titleElement.style.color = "#aaa";
+      updateTimerDisplay();
+      resetProgressBar();
+      removeActiveButton(); // Remove any active button styling
+    });
+
+    // Highlight the active button
+    function setActiveButton(button) {
+      startBtn.classList.remove("active");
+      breakBtn.classList.remove("active");
+      resetBtn.classList.remove("active");
+      button.classList.add("active");
+    }
+
+    // Remove the active button highlight
+    function removeActiveButton() {
+      startBtn.classList.remove("active");
+      breakBtn.classList.remove("active");
+      resetBtn.classList.remove("active");
+    }
+
+    // Reset the progress bar to full width
+    function resetProgressBar() {
+      const progressBar = document.getElementById('progressBar');
+      progressBar.style.width = '100%';
+    }
+
+    // Update the progress bar as time decreases
+    function updateProgressBar() {
+      const progressBar = document.getElementById('progressBar');
+      const progressPercentage = (currentTime / (isWorking ? workTime : breakTime)) * 100;
+      progressBar.style.width = progressPercentage + '%';
+    }
+
+    // Trigger sparkles effect around the button
+    function triggerSparkles(button) {
+      for (let i = 0; i < 15; i++) {
+        const sparkle = document.createElement("div");
+        sparkle.classList.add("sparkle");
+
+        const angle = Math.random() * 360;
+        const distance = Math.random() * 80 + 30;
+        const x = distance * Math.cos(angle) + "px";
+        const y = distance * Math.sin(angle) + "px";
+
+        sparkle.style.setProperty('--x', x);
+        sparkle.style.setProperty('--y', y);
+
+        button.appendChild(sparkle);
+
+        sparkle.addEventListener("animationend", () => {
+          sparkle.remove(); // Remove sparkle element after animation ends
+        });
+      }
+    }
+
+    // Trigger wiggle animation on the break button
+    function triggerWiggle(button) {
+      button.classList.add('wiggle');
+      setTimeout(() => {
+        button.classList.remove('wiggle');
+      }, 500);
+    }
+
+    // Set the progress bar color to match the active button color
+    function setProgressBarColor(button) {
+      const progressBar = document.getElementById('progressBar');
+      progressBar.style.backgroundColor = window.getComputedStyle(button).backgroundColor;
+    }
+
+    // Initial timer display update
+    updateTimerDisplay();
+
+  </script>
+</body>
+</html>
